@@ -3,6 +3,18 @@
 
 #include <Arduino.h>
 
+/*
+CONEXION ADXL355
+
+    ESP32     ADXL
+    3V3        P1_2
+    GND        P1_3
+    D2->15         P2_4
+    D18->14        P2_5
+    D19->12        P2_3
+    D23->13        P2_6
+*/
+
 
 // ADXL355 memory register addresses
 const int XDATA3 = 0x08;
@@ -33,7 +45,14 @@ const int READ_BYTE = 0x01;
 const int WRITE_BYTE = 0x00;
 
 // Pins used for the connection with ADXL355Z
-const int CHIP_SELECT_PIN_ADXL355 = 2;
+
+#define ADXL_MISO 12
+#define ADXL_MOSI 13
+#define ADXL_SCK 14
+#define ADXL_CS 15
+
+extern SPIClass spiADXL;
+
 //const int CHIP_SELECT_PIN_SD = 5;
 
 // Function prototypes
@@ -42,5 +61,6 @@ unsigned int readRegistry(byte thisRegister);
 void readFIFOData(uint8_t *buffer, int length);
 float convert_data(uint8_t *data);
 bool isDataReady();
+void acelerometroTask(void *pvParameters);
 
 #endif

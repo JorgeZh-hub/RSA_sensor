@@ -1,18 +1,21 @@
 // lib/ADXL355/ADXL355.cpp
 #include <SPI.h>
 #include "ADXL355.h"
+#include "esp_task_wdt.h"
 //#include <freertos/semphr.h>
 
 //SemaphoreHandle_t xSpiMutex;
+
+SPIClass spiADXL(HSPI);
 
 
 void writeRegister(byte thisRegister, byte thisValue) {
     //xSemaphoreTake(xSpiMutex, portMAX_DELAY);
     byte dataToSend = (thisRegister << 1) | WRITE_BYTE;
-    digitalWrite(CHIP_SELECT_PIN_ADXL355, LOW);
-    SPI.transfer(dataToSend);
-    SPI.transfer(thisValue);
-    digitalWrite(CHIP_SELECT_PIN_ADXL355, HIGH);
+    digitalWrite(ADXL_CS, LOW);
+    spiADXL.transfer(dataToSend);
+    spiADXL.transfer(thisValue);
+    digitalWrite(ADXL_CS, HIGH);
     //xSemaphoreGive(xSpiMutex);
 }
 
@@ -20,10 +23,10 @@ unsigned int readRegistry(byte thisRegister) {
     //xSemaphoreTake(xSpiMutex, portMAX_DELAY);
     unsigned int result = 0;
     byte dataToSend = (thisRegister << 1) | READ_BYTE;
-    digitalWrite(CHIP_SELECT_PIN_ADXL355, LOW);
-    SPI.transfer(dataToSend);
-    result = SPI.transfer(0x00);
-    digitalWrite(CHIP_SELECT_PIN_ADXL355, HIGH);
+    digitalWrite(ADXL_CS, LOW);
+    spiADXL.transfer(dataToSend);
+    result = spiADXL.transfer(0x00);
+    digitalWrite(ADXL_CS, HIGH);
     //xSemaphoreGive(xSpiMutex);
     return result;
 }
@@ -37,13 +40,13 @@ float convert_data(uint8_t *data){
 
 void readFIFOData(uint8_t *buffer, int length) {
     //xSemaphoreTake(xSpiMutex, portMAX_DELAY);
-    digitalWrite(CHIP_SELECT_PIN_ADXL355, LOW);
+    digitalWrite(ADXL_CS, LOW);
     byte dataToSend = (FIFO_DATA << 1) | READ_BYTE;
-    SPI.transfer(dataToSend);
+    spiADXL.transfer(dataToSend);
     for (int i = 0; i < length; i++) {
-        buffer[i] = SPI.transfer(0x00);
+        buffer[i] = spiADXL.transfer(0x00);
     }
-    digitalWrite(CHIP_SELECT_PIN_ADXL355, HIGH);
+    digitalWrite(ADXL_CS, HIGH);
     //xSemaphoreGive(xSpiMutex);
 }
 
@@ -52,4 +55,35 @@ void readFIFOData(uint8_t *buffer, int length) {
 bool isDataReady() {
   uint8_t status = readRegistry(STATUS_REG);
   return (status & 0x01); // DTA_RDY bit
+}
+
+void acelerometroTask(void *pvParameters) {
+    while (true) {
+        if (isDataReady()) {
+            int fifoEntries = readRegistry(FIFO_ENTRIES);
+            int samplesToRead = fifoEntries * 3; // 3 bytes per axis (X, Y, Z)
+
+            if (samplesToRead > 0) {
+                uint8_t *buffer = (uint8_t *)malloc(samplesToRead * sizeof(uint8_t));
+                if (buffer == NULL) {
+                    Serial.println("Memory allocation failed!");
+                    vTaskDelay(10 / portTICK_PERIOD_MS);
+                    continue;
+                }
+
+                readFIFOData(buffer, samplesToRead);
+
+                for (int i = 0; i < samplesToRead; i += 9) { // Each set is 9 bytes
+                    float x = convert_data(&buffer[i]);
+                    float y = convert_data(&buffer[i + 3]);
+                    float z = convert_data(&buffer[i + 6]);
+
+                    Serial.printf("%.3f, %.3f, %.3f\n", x, y, z);
+                }
+
+                free(buffer);
+            }
+        }
+        vTaskDelay(10 / portTICK_PERIOD_MS);
+    }
 }
