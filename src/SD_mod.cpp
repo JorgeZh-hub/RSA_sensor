@@ -13,7 +13,7 @@ void writeToFile(const char *filename, const char *message) {
         Serial.println("SD Write Failed");
     }
 }
-
+/*
 void sd_task(void *pvParameters) {
     TickType_t lastWakeTime = xTaskGetTickCount();
 
@@ -28,4 +28,4 @@ void sd_task(void *pvParameters) {
         Serial.printf("                    ");
     }
 }
-
+*/

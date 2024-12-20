@@ -61,6 +61,6 @@ unsigned int readRegistry(byte thisRegister);
 void readFIFOData(uint8_t *buffer, int length);
 float convert_data(uint8_t *data);
 bool isDataReady();
-void acelerometroTask(void *pvParameters);
+//void acelerometroTask(void *pvParameters);
 
 #endif

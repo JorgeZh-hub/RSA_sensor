@@ -56,34 +56,3 @@ bool isDataReady() {
   uint8_t status = readRegistry(STATUS_REG);
   return (status & 0x01); // DTA_RDY bit
 }
-
-void acelerometroTask(void *pvParameters) {
-    while (true) {
-        if (isDataReady()) {
-            int fifoEntries = readRegistry(FIFO_ENTRIES);
-            int samplesToRead = fifoEntries * 3; // 3 bytes per axis (X, Y, Z)
-
-            if (samplesToRead > 0) {
-                uint8_t *buffer = (uint8_t *)malloc(samplesToRead * sizeof(uint8_t));
-                if (buffer == NULL) {
-                    Serial.println("Memory allocation failed!");
-                    vTaskDelay(10 / portTICK_PERIOD_MS);
-                    continue;
-                }
-
-                readFIFOData(buffer, samplesToRead);
-
-                for (int i = 0; i < samplesToRead; i += 9) { // Each set is 9 bytes
-                    float x = convert_data(&buffer[i]);
-                    float y = convert_data(&buffer[i + 3]);
-                    float z = convert_data(&buffer[i + 6]);
-
-                    Serial.printf("%.3f, %.3f, %.3f\n", x, y, z);
-                }
-
-                free(buffer);
-            }
-        }
-        vTaskDelay(10 / portTICK_PERIOD_MS);
-    }
-}

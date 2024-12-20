@@ -1,5 +1,6 @@
 #include "RTC3231.h"
 RTC_DS3231 rtc;
+
 void updateRTCFromNTP() {
     configTime(gmtOffset_sec, daylightOffset_sec, ntpServer);
     time_t now = time(nullptr);
@@ -22,7 +23,7 @@ void updateRTCFromNTP() {
 
 void rtc_task(void *pvParameters) {
     TickType_t lastWakeTime = xTaskGetTickCount();
-    const TickType_t interval = 1000 / portTICK_PERIOD_MS;
+    const TickType_t interval = 5 / portTICK_PERIOD_MS;
 
     while (true) {
         DateTime now = rtc.now();
