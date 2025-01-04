@@ -5,9 +5,7 @@
 //#include <freertos/semphr.h>
 
 //SemaphoreHandle_t xSpiMutex;
-
 SPIClass spiADXL(HSPI);
-
 
 void writeRegister(byte thisRegister, byte thisValue) {
     //xSemaphoreTake(xSpiMutex, portMAX_DELAY);
@@ -33,13 +31,18 @@ unsigned int readRegistry(byte thisRegister) {
 
 float convert_data(uint8_t *data){
   int32_t raw = ((int32_t)data[0] << 12) | ((int32_t)data[1] << 4) | (int32_t)data[2]>>4;   // Reubicación de bits
-  if (raw & 0x80000) raw -= 0x100000;     // Módulo 2
-  float acceleration = raw * 0.007476;    // Conversion a cm/s^2
+  if (raw & 0x80000) raw -= 0x100000;                   // Módulo 2
+  float acceleration = raw *  0.00374;    // Conversion a cm/s^2
   return acceleration;
 }
 
+int32_t raw_data(uint8_t *data){
+  int32_t raw = ((int32_t)data[0] << 12) | ((int32_t)data[1] << 4) | (int32_t)data[2]>>4;   // Reubicación de bits
+  if (raw & 0x80000) raw -= 0x100000;                   // Módulo 2
+  return raw;
+}
+
 void readFIFOData(uint8_t *buffer, int length) {
-    //xSemaphoreTake(xSpiMutex, portMAX_DELAY);
     digitalWrite(ADXL_CS, LOW);
     byte dataToSend = (FIFO_DATA << 1) | READ_BYTE;
     spiADXL.transfer(dataToSend);
@@ -47,7 +50,6 @@ void readFIFOData(uint8_t *buffer, int length) {
         buffer[i] = spiADXL.transfer(0x00);
     }
     digitalWrite(ADXL_CS, HIGH);
-    //xSemaphoreGive(xSpiMutex);
 }
 
 
