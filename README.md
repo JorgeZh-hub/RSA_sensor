@@ -36,7 +36,7 @@ El desarrollo del sistema sensor se realizó utilizando:
 - **Entorno de desarrollo:** PlatformIO.
 
 PlatformIO es un entorno de desarrollo integrado (IDE) multiplataforma que ofrece herramientas avanzadas para:
-- Gestín de proyectos.
+- Gestíon de proyectos.
 - Manejo de bibliotecas.
 - Compilación.
 
