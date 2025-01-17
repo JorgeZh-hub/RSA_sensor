@@ -1,5 +1,5 @@
 #include <Arduino.h>
 
-// Credenciales SSID
-const char* ssid = "Jorge_PC";
-const char* password = "12345678";
+// Credenciales SSID para el caso de actualizar la hora desde internet
+const char* ssid = "SSID_name";
+const char* password = "password";

@@ -3,67 +3,52 @@
 
 #include <Arduino.h>
 
-/*
-CONEXION ADXL355
+// Direcciones de los registros de memoria del ADXL355
+const int XDATA3 = 0x08;  // Byte más significativo del eje X
+const int XDATA2 = 0x09;  // Byte medio del eje X
+const int XDATA1 = 0x0A;  // Byte menos significativo del eje X
+const int YDATA3 = 0x0B;  // Byte más significativo del eje Y
+const int YDATA2 = 0x0C;  // Byte medio del eje Y
+const int YDATA1 = 0x0D;  // Byte menos significativo del eje Y
+const int ZDATA3 = 0x0E;  // Byte más significativo del eje Z
+const int ZDATA2 = 0x0F;  // Byte medio del eje Z
+const int ZDATA1 = 0x10;  // Byte menos significativo del eje Z
+const int RANGE = 0x2C;   // Registro para configurar el rango de medición
+const int POWER_CTL = 0x2D;  // Control de energía (modo de operación)
+const int FIFO_DATA = 0x11;  // Datos del FIFO
+const int STATUS_REG = 0x04;  // Registro de estado
+const int FIFO_ENTRIES = 0x05;  // Número de entradas en el FIFO
+const int FIFO_MAX_SIZE = 96;   // Tamaño máximo del FIFO en bytes
 
-    ESP32     ADXL
-    3V3        P1_2
-    GND        P1_3
-    D2->15         P2_4
-    D18->14        P2_5
-    D19->12        P2_3
-    D23->13        P2_6
-*/
+const int FILTER = 0x28;  // Configuración del filtro de datos
+const int ODR_250_HZ = 0x05;  // Frecuencia de salida de datos a 250 Hz
+const uint32_t TIME_INCREMENT = 8; // Incremento en milisegundos entre muestras
+const int RESET = 0x2F;   // Registro de reinicio del dispositivo
 
+// Valores del dispositivo
+const int RANGE_2G = 0x01;       // Rango de medición de ±2G
+const int STANDBY_MODE = 0x03;   // Configuración para modo de espera
+const int MEASURE_MODE = 0x06;   // Configuración para modo de medición
 
-// ADXL355 memory register addresses
-const int XDATA3 = 0x08;
-const int XDATA2 = 0x09;
-const int XDATA1 = 0x0A;
-const int YDATA3 = 0x0B;
-const int YDATA2 = 0x0C;
-const int YDATA1 = 0x0D;
-const int ZDATA3 = 0x0E;
-const int ZDATA2 = 0x0F;
-const int ZDATA1 = 0x10;
-const int RANGE = 0x2C;
-const int POWER_CTL = 0x2D;
-const int FIFO_DATA = 0x11;
-const int STATUS_REG = 0x04;
-const int FIFO_ENTRIES = 0x05;
-const int FIFO_MAX_SIZE = 96;
+// Operaciones de lectura y escritura
+const int READ_BYTE = 0x01;      // Código para lectura de un byte
+const int WRITE_BYTE = 0x00;     // Código para escritura de un byte
 
-const int FILTER = 0x28;
-const int ODR_250_HZ = 0x04;  
-const int RESET = 0x2F;  
+// Pines utilizados para la conexión con el ADXL355
+#define ADXL_MISO 12  // Pin para la señal MISO (Master In Slave Out)
+#define ADXL_MOSI 13  // Pin para la señal MOSI (Master Out Slave In)
+#define ADXL_SCK 14   // Pin para la señal del reloj (SCK)
+#define ADXL_CS 15    // Pin para la señal de selección de chip (CS)
 
-// Device values
-const int RANGE_2G = 0x01;
-const int STANDBY_MODE = 0x03;    // DTRDY, NO TEMP, STANDBY
-const int MEASURE_MODE = 0x06;    // NO DTRDY, NO TEMP, MEASURE
+extern SPIClass spiADXL; // SPI personalizado para el sensor ADXL355
 
-// Operations
-const int READ_BYTE = 0x01;
-const int WRITE_BYTE = 0x00;
-
-// Pins used for the connection with ADXL355Z
-
-#define ADXL_MISO 12
-#define ADXL_MOSI 13
-#define ADXL_SCK 14
-#define ADXL_CS 15
-
-extern SPIClass spiADXL;
-
-//const int CHIP_SELECT_PIN_SD = 5;
-
-// Function prototypes
-void writeRegister(byte thisRegister, byte thisValue);
-unsigned int readRegistry(byte thisRegister);
-void readFIFOData(uint8_t *buffer, int length);
-float convert_data(uint8_t *data);
-int32_t raw_data(uint8_t *data);
-bool isDataReady();
-//void acelerometroTask(void *pvParameters);
+// Prototipos de funciones
+void writeRegister(byte thisRegister, byte thisValue);  // Escribe en un registro específico
+unsigned int readRegistry(byte thisRegister);           // Lee un registro específico
+void readFIFOData(uint8_t *buffer, int length);         // Lee datos del FIFO
+float convert_data(uint8_t *data);                      // Convierte datos crudos a valores flotantes
+int32_t raw_data(uint8_t *data);                        // Extrae datos crudos en formato de 32 bits
+bool isDataReady();                                     // Verifica si hay datos listos en el sensor
 
 #endif
+
