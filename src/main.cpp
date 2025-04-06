@@ -1,15 +1,16 @@
 #include <Arduino.h>
 #include <SPI.h>
-#include <WiFi.h>
+#include <ArduinoJson.h>
 #include "ADXL355.h"
 #include "RTC3231.h"
 #include "SD_mod.h"
-#include "credentials.h"
+#include "WiFi_mod.h"
 #include "GPS.h"
+#include "Mqtt_mod.h"
 
 // Task handles
 TaskHandle_t adx_taskHandle = NULL;  // Manejador de tarea para el acelerómetro
-TaskHandle_t sync_taskHandle = NULL; // Manejador de tarea para la sincronización
+TaskHandle_t wifi_taskHandle = NULL; // Manejador de tarea para la sincronización
 
 volatile bool syncFlag = false;                  // Bandera que indica si se recibió la señal de sincronización
 hw_timer_t *timer = NULL;                        // Puntero al temporizador utilizado para la generación de timestamps
@@ -104,6 +105,28 @@ void acelerometroTask(void *pvParameters)
                     memcpy(dataToWrite + sizeof(fecha) + sizeof(buffer_timestamp[i / 9]) + sizeof(x_raw), (const void *)&y_raw, sizeof(y_raw));
                     memcpy(dataToWrite + sizeof(fecha) + sizeof(buffer_timestamp[i / 9]) + sizeof(x_raw) + sizeof(y_raw), (const void *)&z_raw, sizeof(z_raw));
 
+                    if (!client.connected()) {
+                        reconnect();
+                    }
+
+                    // 1. Llenar el struct con datos reales
+                    datosSensor.fecha = fecha;     // Ejemplo: AAAAMMDD
+                    datosSensor.timestamp = buffer_timestamp[i / 9]; // Tiempo actual
+                    datosSensor.x_raw = x_raw;         // Valor de ejemplo
+                    datosSensor.y_raw = y_raw;
+                    datosSensor.z_raw = z_raw;
+
+                    // 2. Enviar el struct como binario por MQTT
+                    if (client.publish("sensor/datos_bin", (const uint8_t *)&datosSensor, sizeof(datosSensor)))
+                    {
+                        Serial.println("Datos binarios enviados");
+                        // Debug: Imprime los bytes enviados (opcional)
+                        Serial.write((uint8_t *)&datosSensor, sizeof(datosSensor));
+                    }
+                    else
+                    {
+                        Serial.println("Error al publicar");
+                    }
                     // Verifica si hay espacio en el buffer y escribe en la tarjeta SD
                     if (bufferIndex + sizeof(dataToWrite) <= DATA_BLOCK_SIZE)
                     {
@@ -122,6 +145,16 @@ void acelerometroTask(void *pvParameters)
                 free(buffer_timestamp); // Libera la memoria utilizada para los timestamps
             }
         }
+    }
+}
+
+void wifi_task(void *parameter)
+{
+
+    while (true)
+    {
+        verificarWiFi();
+        vTaskDelay(pdMS_TO_TICKS(10000));
     }
 }
 
@@ -226,11 +259,17 @@ void setup()
     delay(100);                             // Espera 100 ms para que la configuración se complete
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
+    ///////////////////////////////////////// Wifi /////////////////////////////////////////////////////////////////////
+    conectarWiFi();
+
+    ///////////////////////////////////////// MQTT ///////////////////////////////////////////////////////
+    client.setServer(mqtt_server, mqtt_port);
+
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
     // Crea las tareas para el acelerómetro y la sincronización
     xTaskCreatePinnedToCore(acelerometroTask, "AcelerometroTask", 4096, NULL, 1, &adx_taskHandle, tskNO_AFFINITY);
-    xTaskCreatePinnedToCore(sync_task, "SYNCTask", 2048, NULL, 1, &sync_taskHandle, tskNO_AFFINITY);
+    xTaskCreatePinnedToCore(wifi_task, "WiFiTask", 2048, NULL, 1, &wifi_taskHandle, tskNO_AFFINITY);
 }
 
 void loop() {} // La función loop está vacía, ya que el código se maneja en las tareas

@@ -21,8 +21,8 @@ const int FIFO_ENTRIES = 0x05;  // Número de entradas en el FIFO
 const int FIFO_MAX_SIZE = 96;   // Tamaño máximo del FIFO en bytes
 
 const int FILTER = 0x28;  // Configuración del filtro de datos
-const int ODR_250_HZ = 0x05;  // Frecuencia de salida de datos a 250 Hz
-const uint32_t TIME_INCREMENT = 8; // Incremento en milisegundos entre muestras
+const int ODR_250_HZ = 0x04;  // Frecuencia de salida de datos a 250 Hz
+const uint32_t TIME_INCREMENT = 4; // Incremento en milisegundos entre muestras
 const int RESET = 0x2F;   // Registro de reinicio del dispositivo
 
 // Valores del dispositivo
@@ -38,7 +38,7 @@ const int WRITE_BYTE = 0x00;     // Código para escritura de un byte
 #define ADXL_MISO 12  // Pin para la señal MISO (Master In Slave Out)
 #define ADXL_MOSI 13  // Pin para la señal MOSI (Master Out Slave In)
 #define ADXL_SCK 14   // Pin para la señal del reloj (SCK)
-#define ADXL_CS 15    // Pin para la señal de selección de chip (CS)
+#define ADXL_CS 27    // Pin para la señal de selección de chip (CS)
 
 extern SPIClass spiADXL; // SPI personalizado para el sensor ADXL355
 
