@@ -1,6 +1,5 @@
 #include <Arduino.h>
 #include <SPI.h>
-#include <ArduinoJson.h>
 #include "ADXL355.h"
 #include "RTC3231.h"
 #include "SD_mod.h"
@@ -105,14 +104,16 @@ void acelerometroTask(void *pvParameters)
                     memcpy(dataToWrite + sizeof(fecha) + sizeof(buffer_timestamp[i / 9]) + sizeof(x_raw), (const void *)&y_raw, sizeof(y_raw));
                     memcpy(dataToWrite + sizeof(fecha) + sizeof(buffer_timestamp[i / 9]) + sizeof(x_raw) + sizeof(y_raw), (const void *)&z_raw, sizeof(z_raw));
 
-                    if (!client.connected()) {
+                    /*
+                    if (!client.connected())
+                    {
                         reconnect();
                     }
 
                     // 1. Llenar el struct con datos reales
-                    datosSensor.fecha = fecha;     // Ejemplo: AAAAMMDD
+                    datosSensor.fecha = fecha;                       // Ejemplo: AAAAMMDD
                     datosSensor.timestamp = buffer_timestamp[i / 9]; // Tiempo actual
-                    datosSensor.x_raw = x_raw;         // Valor de ejemplo
+                    datosSensor.x_raw = x_raw;                       // Valor de ejemplo
                     datosSensor.y_raw = y_raw;
                     datosSensor.z_raw = z_raw;
 
@@ -126,7 +127,7 @@ void acelerometroTask(void *pvParameters)
                     else
                     {
                         Serial.println("Error al publicar");
-                    }
+                    }*/
                     // Verifica si hay espacio en el buffer y escribe en la tarjeta SD
                     if (bufferIndex + sizeof(dataToWrite) <= DATA_BLOCK_SIZE)
                     {
@@ -264,6 +265,9 @@ void setup()
 
     ///////////////////////////////////////// MQTT ///////////////////////////////////////////////////////
     client.setServer(mqtt_server, mqtt_port);
+    enviarEstado("on");
+
+    enviarEstado("online");
 
     //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
