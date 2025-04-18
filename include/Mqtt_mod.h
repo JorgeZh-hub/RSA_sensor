@@ -6,13 +6,20 @@
 #include <ArduinoJson.h>
 
 // Configuración MQTT
-constexpr const char *mqtt_server = "174.138.41.251"; // Broker público de prueba
+constexpr const char *mqtt_server = "174.138.41.251"; // Broker privado
 constexpr const int mqtt_port = 1883;
 constexpr const char *mqtt_user = "rsa"; // Dejar vacío si no hay autenticación
 constexpr const char *mqtt_pass = "RSAiotace2023";
 
 extern WiFiClient espClient;
 extern PubSubClient client;
+
+// Crear el mensaje JSON LWT
+extern String clientId;
+extern String lwtPayload;
+constexpr const char *willTopic = "status";
+constexpr const int willQos = 0;
+constexpr const bool willRetain = false;
 
 extern struct DatosSensor
 {

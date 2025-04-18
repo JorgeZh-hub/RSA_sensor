@@ -1,4 +1,5 @@
 #include "WiFi_mod.h"
+#include "Mqtt_mod.h"
 
 void conectarWiFi()
 {
@@ -10,7 +11,7 @@ void conectarWiFi()
     int intentos = 0;
     while (WiFi.status() != WL_CONNECTED && intentos < 20)
     { // Intentar por 20 ciclos
-        delay(1000);
+        vTaskDelay(pdMS_TO_TICKS(10000));
         Serial.print(".");
         intentos++;
     }
@@ -27,11 +28,16 @@ void conectarWiFi()
     }
 }
 
-void verificarWiFi() {
-    if (WiFi.status() != WL_CONNECTED) {
+void verificarWiFi()
+{
+    if (WiFi.status() != WL_CONNECTED)
+    {
         Serial.println("\nWiFi desconectado. Reconectando...");
         conectarWiFi();
-    } else {
+        reconnect();
+    }
+    else
+    {
         Serial.println("WiFi conectado y funcionando.");
     }
 }

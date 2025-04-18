@@ -159,6 +159,19 @@ void wifi_task(void *parameter)
     }
 }
 
+
+void mqttLoopTask(void *parameter)
+{
+    while (true)
+    {
+        if (client.connected())
+        {
+            client.loop(); // 👈 Mantiene la conexión viva
+        }
+        vTaskDelay(100 / portTICK_PERIOD_MS); // Ejecuta cada 100 ms aprox.
+    }
+}
+
 void setup()
 {
 #ifdef DEBUG
@@ -274,6 +287,7 @@ void setup()
     // Crea las tareas para el acelerómetro y la sincronización
     xTaskCreatePinnedToCore(acelerometroTask, "AcelerometroTask", 4096, NULL, 1, &adx_taskHandle, tskNO_AFFINITY);
     xTaskCreatePinnedToCore(wifi_task, "WiFiTask", 2048, NULL, 1, &wifi_taskHandle, tskNO_AFFINITY);
+    xTaskCreatePinnedToCore(mqttLoopTask, "MQTTLoopTask", 4096, NULL, 1, NULL, tskNO_AFFINITY);
 }
 
 void loop() {} // La función loop está vacía, ya que el código se maneja en las tareas

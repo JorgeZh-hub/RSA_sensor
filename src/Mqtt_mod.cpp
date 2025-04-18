@@ -4,6 +4,9 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 DatosSensor datosSensor;
 
+String clientId = "ESP32_001";
+String lwtPayload = "{\"id\": \"" + clientId + "\", \"status\": \"offline\"}";
+
 void enviarEstado(const String &estado)
 {
     if (!client.connected())
@@ -34,20 +37,28 @@ void reconnect()
     while (!client.connected())
     {
         Serial.print("Intentando conexión MQTT...");
-        String clientId = "ESP32-" + String(random(0xffff), HEX);
 
-        if (client.connect(clientId.c_str(), mqtt_user, mqtt_pass))
+        if (client.connect(
+                clientId.c_str(),
+                mqtt_user,
+                mqtt_pass,
+                willTopic,         // willTopic
+                0,                 // willQoS
+                true,              // willRetain
+                lwtPayload.c_str() // willMessage
+                ))
         {
             Serial.println("Conectado al broker MQTT!");
 
-            enviarEstado("online");
+            // Enviar mensaje indicando que está online con el mismo formato
+            String payloadOnline = "{\"id\": \"" + clientId + "\", \"status\": \"online\"}";
+            client.publish(willTopic, payloadOnline.c_str(), true);
         }
         else
         {
             Serial.print("Error, rc=");
             Serial.print(client.state());
             Serial.println(" Intentando en 5 segundos...");
-            delay(5000);
         }
     }
 }
