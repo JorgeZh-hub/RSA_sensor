@@ -21,8 +21,13 @@ extern portMUX_TYPE sdMux;        // Mutex para proteger la bandera y evitar pro
 // Variables para gestionar los buffers de datos a escribir en la tarjeta SD
 extern size_t bufferIndex;                // Índice de la posición actual del buffer principal
 extern byte writeBuffer[DATA_BLOCK_SIZE]; // Buffer para almacenar los datos a escribir
+extern bool writing;
+extern SemaphoreHandle_t sdMutex; // Mutex para lectura y escritura en la SD
 
 // Prototipos de las funciones
 void writeToFile(const char *filename, const byte *buffer, size_t bufferSize); // Función para escribir en un archivo de la tarjeta SD
+void lectorTask(void *pvParameters);
+int32_t buscarOffsetFin(File &file, uint32_t timestampBuscado);
+int32_t buscarOffsetInicio(File &file, uint32_t timestampBuscado);
 
 #endif // SD_H

@@ -11,11 +11,12 @@
 TaskHandle_t adx_taskHandle = NULL;  // Manejador de tarea para el acelerómetro
 TaskHandle_t wifi_taskHandle = NULL; // Manejador de tarea para la sincronización
 
-volatile bool syncFlag = false;                  // Bandera que indica si se recibió la señal de sincronización
-hw_timer_t *timer = NULL;                        // Puntero al temporizador utilizado para la generación de timestamps
-portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED; // Mutex para proteger la manipulación de la bandera de sincronización
+// volatile bool syncFlag = false;                  // Bandera que indica si se recibió la señal de sincronización
+// hw_timer_t *timer = NULL;                        // Puntero al temporizador utilizado para la generación de timestamps
+// portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED; // Mutex para proteger la manipulación de la bandera de sincronización
 
 // Configuración del temporizador para incrementar el timestamp
+/*
 void setupTimer()
 {
     timer = timerBegin(0, 80, true); // Timer 0, prescaler 80 (1 MHz = 1 µs)
@@ -49,7 +50,7 @@ void sync_task(void *pvParameters)
         }
         vTaskDelay(pdMS_TO_TICKS(1)); // Retardo de 1 ms para evitar uso excesivo de CPU
     }
-}
+}*/
 
 // Función para generar los timestamps en el buffer
 void generate_buffer_timestamp(uint32_t *buffer_timestamp, int num_samples, uint32_t actual_timestamp)
@@ -136,9 +137,12 @@ void acelerometroTask(void *pvParameters)
                     }
                     else
                     {
-                        // Si el buffer está lleno, escribe los datos en el archivo
-                        writeToFile("/data0.bin", writeBuffer, bufferIndex);
-                        bufferIndex = 0; // Resetea el índice del buffer
+                        if (xSemaphoreTake(sdMutex, portMAX_DELAY))
+                        {
+                            writeToFile("/data0.bin", writeBuffer, bufferIndex);
+                            bufferIndex = 0;
+                            xSemaphoreGive(sdMutex);
+                        }
                     }
                 }
 
@@ -158,7 +162,6 @@ void wifi_task(void *parameter)
         vTaskDelay(pdMS_TO_TICKS(10000));
     }
 }
-
 
 void mqttLoopTask(void *parameter)
 {
@@ -223,12 +226,12 @@ void setup()
     }
 
     // Configura la salida de onda cuadrada (SQW) a 1 Hz
-    rtc.writeSqwPinMode(DS3231_SquareWave1Hz);
+    // rtc.writeSqwPinMode(DS3231_SquareWave1Hz);
 
-    pinMode(SQW_INT, INPUT_PULLUP);                                         // Configura el pin de interrupción de SQW con resistencia pull-up
-    attachInterrupt(digitalPinToInterrupt(SQW_INT), sqwInterrupt, FALLING); // Configura la interrupción en el flanco de bajada
+    // pinMode(SQW_INT, INPUT_PULLUP);                                         // Configura el pin de interrupción de SQW con resistencia pull-up
+    // attachInterrupt(digitalPinToInterrupt(SQW_INT), sqwInterrupt, FALLING); // Configura la interrupción en el flanco de bajada
 
-    setupTimer(); // Configura el temporizador para la actualización del timestamp
+    // setupTimer(); // Configura el temporizador para la actualización del timestamp
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 
@@ -278,14 +281,16 @@ void setup()
 
     ///////////////////////////////////////// MQTT ///////////////////////////////////////////////////////
     client.setServer(mqtt_server, mqtt_port);
+    client.setCallback(callback);
     enviarEstado("on");
 
     enviarEstado("online");
 
-    //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
+    ///////////////////////////////////////////FreeRTOS//////////////////////////////////////////////////////////////////////
 
     // Crea las tareas para el acelerómetro y la sincronización
-    xTaskCreatePinnedToCore(acelerometroTask, "AcelerometroTask", 4096, NULL, 1, &adx_taskHandle, tskNO_AFFINITY);
+    xTaskCreatePinnedToCore(acelerometroTask, "AcelerometroTask", 4096, NULL, 2, &adx_taskHandle, tskNO_AFFINITY);
+    xTaskCreatePinnedToCore(lectorTask, "lectorTask", 4096, NULL, 1, NULL, tskNO_AFFINITY);
     xTaskCreatePinnedToCore(wifi_task, "WiFiTask", 2048, NULL, 1, &wifi_taskHandle, tskNO_AFFINITY);
     xTaskCreatePinnedToCore(mqttLoopTask, "MQTTLoopTask", 4096, NULL, 1, NULL, tskNO_AFFINITY);
 }
