@@ -5,12 +5,12 @@ WiFiClient espClient;
 PubSubClient client(espClient);
 DatosSensor datosSensor;
 
-LecturaControl controlLectura = {false,false, 0, 0, 0, 0, 0, 0, 0};
-
+LecturaControl controlLectura = {false, false, 0, 0, 0, 0, 0, 0, 0};
 
 uint32_t convertirFecha(uint32_t timestamp)
 {
-    time_t rawTime = timestamp;
+    // Ajustar el timestamp a GMT-5
+    time_t rawTime = timestamp - 5 * 3600;
     struct tm *timeinfo = gmtime(&rawTime);
 
     uint32_t fecha = (timeinfo->tm_year + 1900) * 10000 +
@@ -22,14 +22,18 @@ uint32_t convertirFecha(uint32_t timestamp)
 
 uint32_t convertirTiempoDelDia(uint32_t timestamp)
 {
-    time_t rawTime = timestamp;
+    // Ajustar a GMT-5
+    time_t rawTime = timestamp - 5 * 3600;
+
+    // Obtener componentes de tiempo UTC (ajustado)
     struct tm *timeinfo = gmtime(&rawTime);
 
+    // Calcular milisegundos desde medianoche
     uint32_t segundosDelDia = timeinfo->tm_hour * 3600 +
                               timeinfo->tm_min * 60 +
                               timeinfo->tm_sec;
 
-    return segundosDelDia * 1000; // lo guardas en milisegundos
+    return segundosDelDia * 1000;
 }
 
 void enviarEstado(const String &estado)
@@ -147,12 +151,13 @@ void callback(char *topic, byte *payload, unsigned int length)
 
         uint32_t tsUnix = timestamp.toInt();
         controlLectura.fecha = convertirFecha(tsUnix);
+        Serial.printf("Fecha interpretada: %d \n", controlLectura.fecha);
         controlLectura.timestampInicio = convertirTiempoDelDia(tsUnix);
-        controlLectura.timestampFin = controlLectura.timestampInicio + duration;
-        controlLectura.posicionInicial = 0; // Empieza desde el inicio (o mejora con índice si tienes uno)
+        controlLectura.timestampFin = controlLectura.timestampInicio + duration * 1000;
+        controlLectura.posicionInicial = 0;
         controlLectura.lecturaActiva = true;
-        controlLectura.timestampOriginal = (uint32_t) timestamp.toInt();
-        controlLectura.error = false;                 // Reinicia bandera de error
+        controlLectura.timestampOriginal = (uint32_t)timestamp.toInt();
+        controlLectura.error = false; // Reinicia bandera de error
     }
     else
     {

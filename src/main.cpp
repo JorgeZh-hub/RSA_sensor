@@ -12,11 +12,11 @@ TaskHandle_t adx_taskHandle = NULL;  // Manejador de tarea para el acelerómetro
 TaskHandle_t wifi_taskHandle = NULL; // Manejador de tarea para la sincronización
 
 // volatile bool syncFlag = false;                  // Bandera que indica si se recibió la señal de sincronización
-// hw_timer_t *timer = NULL;                        // Puntero al temporizador utilizado para la generación de timestamps
+hw_timer_t *timer = NULL;                        // Puntero al temporizador utilizado para la generación de timestamps
 // portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED; // Mutex para proteger la manipulación de la bandera de sincronización
 
 // Configuración del temporizador para incrementar el timestamp
-/*
+
 void setupTimer()
 {
     timer = timerBegin(0, 80, true); // Timer 0, prescaler 80 (1 MHz = 1 µs)
@@ -28,7 +28,7 @@ void setupTimer()
     timerAlarmWrite(timer, 1000, true); // 1000 µs = 1 ms
     timerAlarmEnable(timer);            // Habilita la alarma del temporizador
 }
-
+/*
 // Función de interrupción cuando se recibe un pulso de 1 Hz (SQW) del RTC
 void IRAM_ATTR sqwInterrupt()
 {
@@ -95,7 +95,7 @@ void acelerometroTask(void *pvParameters)
                     }
 #ifdef DEBUG
                     // Imprime los datos de cada muestra para depuración
-                    Serial.printf("%d,  %d,     %d,    %d\n", buffer_timestamp[i / 9], x_raw, y_raw, z_raw);
+                    //Serial.printf("%d,  %d,     %d,    %d\n", buffer_timestamp[i / 9], x_raw, y_raw, z_raw);
 #endif
 
                     // Copia la fecha y los datos al buffer final
@@ -137,12 +137,12 @@ void acelerometroTask(void *pvParameters)
                     }
                     else
                     {
-                        if (xSemaphoreTake(sdMutex, portMAX_DELAY))
-                        {
+                        //if (xSemaphoreTake(sdMutex, portMAX_DELAY))
+                        //{
                             writeToFile("/data0.bin", writeBuffer, bufferIndex);
                             bufferIndex = 0;
-                            xSemaphoreGive(sdMutex);
-                        }
+                            //xSemaphoreGive(sdMutex);
+                        //}
                     }
                 }
 
@@ -231,7 +231,7 @@ void setup()
     // pinMode(SQW_INT, INPUT_PULLUP);                                         // Configura el pin de interrupción de SQW con resistencia pull-up
     // attachInterrupt(digitalPinToInterrupt(SQW_INT), sqwInterrupt, FALLING); // Configura la interrupción en el flanco de bajada
 
-    // setupTimer(); // Configura el temporizador para la actualización del timestamp
+    setupTimer(); // Configura el temporizador para la actualización del timestamp
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////
 

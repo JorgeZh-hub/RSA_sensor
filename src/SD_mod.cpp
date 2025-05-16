@@ -121,6 +121,8 @@ void lectorTask(void *pvParameters)
                         int32_t offsetInicio = buscarOffsetInicio(file, controlLectura.timestampInicio);
                         int32_t offsetFin = buscarOffsetFin(file, controlLectura.timestampFin);
 
+                        Serial.printf("✅ Intervalo solicitado: inicio = %d, fin = %d\n", controlLectura.timestampInicio, controlLectura.timestampFin);
+
                         if (offsetInicio >= 0 && offsetFin >= 0 && offsetInicio <= offsetFin)
                         {
                             controlLectura.offsetInicio = offsetInicio;
