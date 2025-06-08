@@ -4,17 +4,20 @@
 SPIClass spiSD(VSPI); // Se crea una instancia de SPIClass para la comunicación con el módulo SD usando el bus SPI (VSPI)
 
 // Declaración de variables globales para manejar el flujo de datos de la SD
-// volatile bool sdWriteFlag = false;                 // Bandera que indica si hay datos listos para escribir en la SD
-// portMUX_TYPE sdMux = portMUX_INITIALIZER_UNLOCKED; // Mutex para proteger el acceso a la bandera en entornos multitarea (prevenir condiciones de carrera)
-size_t bufferIndex = 0; // Índice para la posición actual de los datos en el buffer
-// size_t mybufferIndex = 0;                          // Índice auxiliar para controlar la posición en otro buffer
+size_t bufferIndex = 0;            // Índice para la posición actual de los datos en el buffer
 byte writeBuffer[DATA_BLOCK_SIZE]; // Buffer de tamaño definido que contiene los datos a escribir en la SD
-// byte myBuffer[DATA_BLOCK_SIZE];                    // Otro buffer auxiliar para manejar los datos
 bool writting = false;
 SemaphoreHandle_t sdMutex = xSemaphoreCreateMutex(); // Definición del mutex
 char file_name[20] = "/00000000.bin";                // Nombre actual del archivo
 int32_t timestamp, x, y, z;
 
+/**
+ * Realiza una búsqueda binaria en el archivo para encontrar el offset
+ * del primer bloque cuyo timestamp sea mayor o igual al timestamp objetivo.
+ * @param file Referencia al archivo abierto en modo lectura.
+ * @param timestampObjetivo Timestamp mínimo buscado (en milisegundos).
+ * @return Offset en bytes del bloque encontrado o -1 si ocurre un error.
+ */
 int32_t buscarOffsetInicio(File &file, uint32_t timestampObjetivo)
 {
     const size_t blockSize = 16;
@@ -54,6 +57,13 @@ int32_t buscarOffsetInicio(File &file, uint32_t timestampObjetivo)
     return result;
 }
 
+/**
+ * Realiza una búsqueda binaria en el archivo para encontrar el offset
+ * del último bloque cuyo timestamp sea menor o igual al timestamp objetivo.
+ * @param file Referencia al archivo abierto en modo lectura.
+ * @param timestampObjetivo Timestamp máximo buscado (en milisegundos).
+ * @return Offset en bytes del bloque encontrado o -1 si ocurre un error.
+ */
 int32_t buscarOffsetFin(File &file, uint32_t timestampObjetivo)
 {
     const size_t blockSize = 16;
@@ -93,7 +103,13 @@ int32_t buscarOffsetFin(File &file, uint32_t timestampObjetivo)
     return result;
 }
 
-// Función para escribir datos en un archivo en la tarjeta SD
+/**
+ * Escribe un bloque de datos binarios en un archivo de la tarjeta SD
+ * en modo append. Si el archivo no existe, se crea automáticamente.
+ * @param filename Nombre del archivo de destino.
+ * @param buffer Puntero al buffer de datos a escribir.
+ * @param bufferSize Tamaño del buffer en bytes.
+ */
 void writeToFile(const char *filename, const byte *buffer, size_t bufferSize)
 {
     File file = SD.open(filename, FILE_APPEND); // Abre el archivo en modo de añadir (append)
@@ -110,6 +126,12 @@ void writeToFile(const char *filename, const byte *buffer, size_t bufferSize)
     }
 }
 
+/**
+ * Tarea encargada de leer bloques binarios desde la tarjeta SD
+ * en un rango de tiempo definido. Usa búsqueda binaria para localizar
+ * los offsets de inicio y fin. Publica los datos por MQTT en bloques
+ * de 16 bytes y reporta el resultado final al concluir la lectura.
+ */
 void lectorTask(void *pvParameters)
 {
     const size_t blockSize = 16;

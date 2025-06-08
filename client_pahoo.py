@@ -9,10 +9,10 @@ from datetime import datetime, timedelta
 
 # --- Configuración del broker ---
 # --- Configuración MQTT ---
-MQTT_BROKER = "174.138.41.251"
+MQTT_BROKER = ""
 MQTT_PORT = 1883
-MQTT_USER = "rsa"
-MQTT_PASS = "RSAiotace2023"
+MQTT_USER = ""
+MQTT_PASS = ""
 
 TOPIC_SUBSCRIBE = "events/ESP32_001/data"
 TOPIC_PUBLISH = "events/ESP32_001/request"

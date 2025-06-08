@@ -3,10 +3,14 @@
 
 WiFiClient espClient;
 PubSubClient client(espClient);
-DatosSensor datosSensor;
 
 LecturaControl controlLectura = {false, false, 0, 0, 0, 0, 0, 0, 0};
 
+/**
+ * Convierte un timestamp UNIX a una fecha en formato YYYYMMDD ajustada a la zona horaria GMT-5.
+ * @param timestamp Timestamp en segundos desde época UNIX.
+ * @return Fecha ajustada en formato entero YYYYMMDD.
+ */
 uint32_t convertirFecha(uint32_t timestamp)
 {
     // Ajustar el timestamp a GMT-5
@@ -20,6 +24,12 @@ uint32_t convertirFecha(uint32_t timestamp)
     return fecha;
 }
 
+/**
+ * Convierte un timestamp UNIX a milisegundos transcurridos desde medianoche,
+ * ajustado a la zona horaria GMT-5.
+ * @param timestamp Timestamp en segundos desde época UNIX.
+ * @return Milisegundos del día (0–86399999).
+ */
 uint32_t convertirTiempoDelDia(uint32_t timestamp)
 {
     // Ajustar a GMT-5
@@ -36,6 +46,11 @@ uint32_t convertirTiempoDelDia(uint32_t timestamp)
     return segundosDelDia * 1000;
 }
 
+/**
+ * Publica un mensaje de estado en formato JSON al tópico MQTT correspondiente.
+ * Si la conexión con el broker no está activa, intenta reconectarse primero.
+ * @param estado Estado a reportar (por ejemplo, "online", "offline", etc.).
+ */
 void enviarEstado(const String &estado)
 {
     if (!client.connected())
@@ -60,6 +75,14 @@ void enviarEstado(const String &estado)
         Serial.println("Error al enviar el mensaje.");
     }
 }
+
+/**
+ * Envía un mensaje JSON final indicando el resultado de una operación.
+ * Incluye el ID del dispositivo, el timestamp original y el estado ("finished" o "error").
+ * Se publica en el tópico MQTT de respuesta.
+ * @param exito Indica si la operación fue exitosa.
+ * @param timestampOriginal Timestamp original asociado a la operación.
+ */
 void enviarResultadoFinal(bool exito, uint32_t timestampOriginal)
 {
     if (!client.connected())
@@ -80,7 +103,11 @@ void enviarResultadoFinal(bool exito, uint32_t timestampOriginal)
     Serial.println(mensaje);
 }
 
-
+/**
+ * Intenta reconectarse al broker MQTT si la conexión se ha perdido.
+ * Publica un mensaje de estado "online" y se suscribe al tópico de solicitudes.
+ * Reintenta indefinidamente hasta lograr la conexión.
+ */
 void reconnect()
 {
     while (!client.connected())
@@ -115,6 +142,15 @@ void reconnect()
     }
 }
 
+/**
+ * Callback que procesa los mensajes MQTT recibidos en formato JSON.
+ * Si el ID del mensaje coincide con el del dispositivo, extrae los parámetros
+ * de timestamp y duración, responde con mensajes de estado ("received", "processing")
+ * y configura el control de lectura de datos desde la SD.
+ * @param topic Tópico en el que se recibió el mensaje.
+ * @param payload Contenido del mensaje en bytes.
+ * @param length Longitud del mensaje.
+ */
 void callback(char *topic, byte *payload, unsigned int length)
 {
     Serial.print("Mensaje recibido en el tópico: ");

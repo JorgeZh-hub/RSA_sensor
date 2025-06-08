@@ -5,9 +5,9 @@
 SPIClass spiADXL(HSPI); // Se utiliza HSPI, asegurando que no interfiera con VSPI si se usa otro hardware SPI
 
 /**
- * Escribe un valor en un registro del ADXL355.
- * @param thisRegister Dirección del registro a escribir.
- * @param thisValue Valor a escribir en el registro.
+ * Escribe un valor en un registro del ADXL355 mediante SPI.
+ * @param thisRegister Dirección del registro donde se escribirá.
+ * @param thisValue Valor que se desea escribir (8 bits).
  */
 void writeRegister(byte thisRegister, byte thisValue)
 {
@@ -17,8 +17,8 @@ void writeRegister(byte thisRegister, byte thisValue)
   // Inicio de la comunicación SPI
   digitalWrite(ADXL_CS, LOW);
   spiADXL.transfer(dataToSend); // Envía la dirección del registro
-  spiADXL.transfer(thisValue); // Envía el valor a escribir
-  digitalWrite(ADXL_CS, HIGH); // Finaliza la comunicación
+  spiADXL.transfer(thisValue);  // Envía el valor a escribir
+  digitalWrite(ADXL_CS, HIGH);  // Finaliza la comunicación
 }
 
 /**

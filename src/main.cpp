@@ -15,12 +15,12 @@ char fileName[20] = "/00000000.bin"; // Nombre actual del archivo
 TaskHandle_t adx_taskHandle = NULL;  // Manejador de tarea para el acelerómetro
 TaskHandle_t wifi_taskHandle = NULL; // Manejador de tarea para la sincronización
 
-// volatile bool syncFlag = false;                  // Bandera que indica si se recibió la señal de sincronización
 hw_timer_t *timer = NULL; // Puntero al temporizador utilizado para la generación de timestamps
-// portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED; // Mutex para proteger la manipulación de la bandera de sincronización
 
-// Configuración del temporizador para incrementar el timestamp
-
+/**
+ * Configura un temporizador por hardware para generar una interrupción
+ * cada 1 ms, utilizada para incrementar un contador de timestamp en milisegundos.
+ */
 void setupTimer()
 {
     timer = timerBegin(0, 80, true); // Timer 0, prescaler 80 (1 MHz = 1 µs)
@@ -32,31 +32,14 @@ void setupTimer()
     timerAlarmWrite(timer, 1000, true); // 1000 µs = 1 ms
     timerAlarmEnable(timer);            // Habilita la alarma del temporizador
 }
-/*
-// Función de interrupción cuando se recibe un pulso de 1 Hz (SQW) del RTC
-void IRAM_ATTR sqwInterrupt()
-{
-    portENTER_CRITICAL(&mux); // Inicia sección crítica para proteger la bandera de sincronización
-    syncFlag = true;          // Marca que el pulso ha sido recibido
-    portEXIT_CRITICAL(&mux);  // Finaliza sección crítica
-}
 
-// Tarea de sincronización que monitorea la llegada del pulso
-void sync_task(void *pvParameters)
-{
-    while (true)
-    {
-        if (syncFlag)
-        {
-            portENTER_CRITICAL(&mux); // Inicia sección crítica
-            syncFlag = false;         // Resetea la bandera
-            portEXIT_CRITICAL(&mux);  // Finaliza sección crítica
-        }
-        vTaskDelay(pdMS_TO_TICKS(1)); // Retardo de 1 ms para evitar uso excesivo de CPU
-    }
-}*/
-
-// Función para generar los timestamps en el buffer
+/**
+ * Genera una secuencia de timestamps decrecientes a partir de un timestamp actual,
+ * aplicando un incremento constante definido por `TIME_INCREMENT`.
+ * @param buffer_timestamp Arreglo donde se almacenarán los timestamps generados.
+ * @param num_samples Número total de muestras a generar.
+ * @param actual_timestamp Timestamp base desde el cual se calcularán los anteriores.
+ */
 void generate_buffer_timestamp(uint32_t *buffer_timestamp, int num_samples, uint32_t actual_timestamp)
 {
     for (int i = num_samples - 1; i >= 0; i--)
@@ -65,7 +48,13 @@ void generate_buffer_timestamp(uint32_t *buffer_timestamp, int num_samples, uint
     }
 }
 
-// Tarea que lee los datos del acelerómetro y los escribe en la SD
+/**
+ * Tarea encargada de leer datos del acelerómetro ADXL355 y almacenarlos en la tarjeta SD.
+ * Captura datos de FIFO, calcula los timestamps correspondientes y agrupa cada muestra
+ * en bloques de 16 bytes (timestamp + aceleraciones X, Y, Z). Escribe los datos en
+ * bloques temporales hasta que se alcanza el tamaño máximo, momento en el que los
+ * guarda en un archivo binario nombrado por fecha (YYYYMMDD).
+ */
 void acelerometroTask(void *pvParameters)
 {
     while (true)
@@ -130,9 +119,12 @@ void acelerometroTask(void *pvParameters)
     }
 }
 
+/**
+ * Tarea periódica que verifica el estado de la conexión WiFi cada 10 segundos.
+ * En caso de desconexión, intenta restablecer la conexión automáticamente.
+ */
 void wifi_task(void *parameter)
 {
-
     while (true)
     {
         verificarWiFi();
@@ -140,6 +132,10 @@ void wifi_task(void *parameter)
     }
 }
 
+/**
+ * Tarea que mantiene activa la conexión MQTT ejecutando `client.loop()`
+ * cada 100 ms, permitiendo la recepción de mensajes entrantes y el envío de keep-alive.
+ */
 void mqttLoopTask(void *parameter)
 {
     while (true)
@@ -204,13 +200,6 @@ void setup()
         Serial.printf("Fecha RTC: %04d-%02d-%02d\n", now.year(), now.month(), now.day());
 #endif
     }
-
-    // Configura la salida de onda cuadrada (SQW) a 1 Hz
-    // rtc.writeSqwPinMode(DS3231_SquareWave1Hz);
-
-    // pinMode(SQW_INT, INPUT_PULLUP);                                         // Configura el pin de interrupción de SQW con resistencia pull-up
-    // attachInterrupt(digitalPinToInterrupt(SQW_INT), sqwInterrupt, FALLING); // Configura la interrupción en el flanco de bajada
-
     setupTimer(); // Configura el temporizador para la actualización del timestamp
 
 //////////////////////////////////////////////////////////////////////////////////////////////////////////////////////

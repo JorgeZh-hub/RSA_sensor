@@ -6,18 +6,15 @@
 #include <ArduinoJson.h>
 
 // Configuración MQTT
-constexpr const char *mqtt_server = "174.138.41.251"; // Broker privado
+constexpr const char *mqtt_server = ""; // Broker privado
 constexpr const int mqtt_port = 1883;
-constexpr const char *mqtt_user = "rsa"; // Dejar vacío si no hay autenticación
-constexpr const char *mqtt_pass = "RSAiotace2023";
-
+constexpr const char *mqtt_user = ""; // Dejar vacío si no hay autenticación
+constexpr const char *mqtt_pass = "";
 
 extern WiFiClient espClient;
 extern PubSubClient client;
 
 // Crear el mensaje JSON LWT
-// extern String clientId;
-// extern String lwtPayload;
 constexpr const char *willTopic = "status";
 constexpr const int willQos = 0;
 constexpr const bool willRetain = false;
@@ -27,14 +24,6 @@ const String lwtPayload = "{\"id\": \"" + clientId + "\", \"status\": \"offline\
 const String topic_status = "status";
 const String topic_response = "events/" + clientId + "/response";
 
-extern struct DatosSensor
-{
-    uint32_t fecha;     // 4 bytes
-    uint32_t timestamp; // 4 bytes
-    int32_t x_raw;      // 3 bytes
-    int32_t y_raw;      // 3 bytes
-    int32_t z_raw;      // 3 bytes
-} datosSensor;
 typedef struct
 {
     bool lecturaActiva;
