@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="utf-8">
+  <meta name="description" content="Sistema embebido para registro de aceleraciones y transmisión de eventos por MQTT">
+  <meta property="og:title" content="RSA_sensor - Registro y Transmisión de Datos Acelerométricos">
+  <meta property="og:description" content="Sensor basado en ESP32 para registro continuo y transmisión MQTT">
+  <meta property="og:url" content="https://jorgezh-hub.github.io/RSA_sensor">
+  <meta property="og:image" content="static/images/banner.png" />
+  <meta property="og:image:width" content="1200"/>
+  <meta property="og:image:height" content="630"/>
+  <meta name="twitter:title" content="RSA_sensor">
+  <meta name="twitter:description" content="Sensor acelerométrico con transmisión por MQTT">
+  <meta name="twitter:image" content="static/images/banner.png">
+  <meta name="twitter:card" content="summary_large_image">
+  <meta name="keywords" content="ESP32, acelerómetro, MQTT, ADXL355, FreeRTOS, SD, GPS">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  <title>RSA_sensor</title>
+  <link rel="icon" type="image/x-icon" href="static/images/favicon.ico">
+  <link href="https://fonts.googleapis.com/css?family=Google+Sans|Noto+Sans|Castoro" rel="stylesheet">
+  <link rel="stylesheet" href="static/css/bulma.min.css">
+  <link rel="stylesheet" href="static/css/bulma-carousel.min.css">
+  <link rel="stylesheet" href="static/css/index.css">
+  <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.5.1/jquery.min.js"></script>
+  <script src="static/js/index.js"></script>
+</head>
+<body>
+  <section class="hero">
+    <div class="hero-body">
+      <div class="container is-max-desktop has-text-centered">
+        <h1 class="title is-1 publication-title">RSA_sensor</h1>
+        <h2 class="subtitle is-4">Sistema de registro acelerométrico y transmisión MQTT</h2>
+        <div class="publication-links">
+          <a href="https://github.com/JorgeZh-hub/RSA_sensor" class="button is-dark is-rounded" target="_blank">
+            <span class="icon"><i class="fab fa-github"></i></span>
+            <span>Repositorio</span>
+          </a>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section hero is-light">
+    <div class="container is-max-desktop">
+      <div class="columns is-centered has-text-centered">
+        <div class="column is-four-fifths">
+          <h2 class="title is-3">Resumen</h2>
+          <div class="content has-text-justified">
+            <p>
+              <strong>RSA_sensor</strong> es un sistema embebido desarrollado sobre <strong>ESP32</strong> para registrar aceleraciones en tiempo real mediante un acelerómetro <strong>ADXL355</strong>. Incorpora sincronización temporal por <strong>GPS</strong>, almacenamiento en <strong>tarjeta SD</strong> y transmisión eficiente de eventos por <strong>MQTT</strong>, con formatos <em>JSON</em> o <em>binario</em>. Gestiona tareas concurrentes mediante <strong>FreeRTOS</strong> y ofrece soporte para eventos bajo demanda con confirmaciones en tiempo real.
+            </p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="hero is-small">
+    <div class="hero-body">
+      <div class="container">
+        <div id="results-carousel" class="carousel results-carousel">
+          <div class="item">
+            <img src="static/images/esquematico.png" alt="Diagrama de conexión del sistema"/>
+            <h2 class="subtitle has-text-centered">Diagrama esquemático del sistema</h2>
+          </div>
+          <div class="item">
+            <img src="static/images/estructura_datos.png" alt="Trama de datos"/>
+            <h2 class="subtitle has-text-centered">Estructura de la trama de datos</h2>
+          </div>
+          <div class="item">
+            <img src="static/images/grafico_datos.png" alt="Gráfico de datos registrados"/>
+            <h2 class="subtitle has-text-centered">Visualización de aceleraciones registradas</h2>
+          </div>
+          <div class="item">
+            <img src="static/images/mqtt_flujo.png" alt="MQTT flujo"/>
+            <h2 class="subtitle has-text-centered">Flujo de comunicación MQTT</h2>
+          </div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="section">
+    <div class="container has-text-centered">
+      <h2 class="title is-4">Autor</h2>
+      <p>Desarrollado por <strong>Jorge Zhangallimbay</strong> <br>
+        Universidad de Cuenca, Facultad de Ingeniería <br>
+        Enero 2025</p>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container">
+      <div class="content has-text-centered">
+        <p>
+          Este sitio fue creado usando la <a href="https://github.com/eliahuhorwitz/Academic-project-page-template" target="_blank">Academic Project Page Template</a>. <br>
+          Licenciado bajo <a rel="license" href="http://creativecommons.org/licenses/by-sa/4.0/" target="_blank">Creative Commons Attribution-ShareAlike 4.0</a>.
+        </p>
+      </div>
+    </div>
+  </footer>
+</body>
+</html>
