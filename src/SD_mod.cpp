@@ -12,77 +12,86 @@ byte writeBuffer[DATA_BLOCK_SIZE]; // Buffer de tamaño definido que contiene lo
 // byte myBuffer[DATA_BLOCK_SIZE];                    // Otro buffer auxiliar para manejar los datos
 bool writting = false;
 SemaphoreHandle_t sdMutex = xSemaphoreCreateMutex(); // Definición del mutex
+char file_name[20] = "/00000000.bin";                // Nombre actual del archivo
+int32_t timestamp, x, y, z;
 
-
-int32_t buscarOffsetInicio(File &file, uint32_t timestampBuscado)
+int32_t buscarOffsetInicio(File &file, uint32_t timestampObjetivo)
 {
-    const size_t blockSize = 20;
+    const size_t blockSize = 16;
     uint8_t buffer[blockSize];
-    int32_t inicio = 0;
-    int32_t fin = file.size() / blockSize - 1;
-    int32_t resultado = -1;
 
-    while (inicio <= fin)
+    size_t totalSize = file.size();
+    int32_t left = 0;
+    int32_t right = totalSize / blockSize - 1;
+    int32_t result = -1;
+
+    while (left <= right)
     {
-        int32_t medio = (inicio + fin) / 2;
-        int32_t offset = medio * blockSize;
+        int32_t mid = left + (right - left) / 2;
+        size_t offset = mid * blockSize;
 
         file.seek(offset);
         if (file.read(buffer, blockSize) != blockSize)
-            break;
+        {
+            Serial.println("❌ Error al leer durante búsqueda binaria.");
+            return -1;
+        }
 
         uint32_t ts;
-        memcpy(&ts, buffer + 4, 4);
+        memcpy(&ts, buffer, 4); // timestamp está al inicio del bloque
 
-        if (ts < timestampBuscado)
+        if (ts < timestampObjetivo)
         {
-            inicio = medio + 1;
+            left = mid + 1;
         }
         else
         {
-            resultado = offset;
-            fin = medio - 1;
+            result = offset;
+            right = mid - 1;
         }
     }
 
-    return resultado;
+    return result;
 }
 
-int32_t buscarOffsetFin(File &file, uint32_t timestampBuscado)
+int32_t buscarOffsetFin(File &file, uint32_t timestampObjetivo)
 {
-    const size_t blockSize = 20;
+    const size_t blockSize = 16;
     uint8_t buffer[blockSize];
-    int32_t inicio = 0;
-    int32_t fin = file.size() / blockSize - 1;
-    int32_t resultado = -1;
 
-    while (inicio <= fin)
+    size_t totalSize = file.size();
+    int32_t left = 0;
+    int32_t right = totalSize / blockSize - 1;
+    int32_t result = -1;
+
+    while (left <= right)
     {
-        int32_t medio = (inicio + fin) / 2;
-        int32_t offset = medio * blockSize;
+        int32_t mid = left + (right - left) / 2;
+        size_t offset = mid * blockSize;
 
         file.seek(offset);
         if (file.read(buffer, blockSize) != blockSize)
-            break;
+        {
+            Serial.println("❌ Error al leer durante búsqueda binaria.");
+            return -1;
+        }
 
         uint32_t ts;
-        memcpy(&ts, buffer + 4, 4);
+        memcpy(&ts, buffer, 4); // timestamp está al inicio
 
-        if (ts > timestampBuscado)
+        if (ts <= timestampObjetivo)
         {
-            fin = medio - 1;
+            result = offset;
+            left = mid + 1;
         }
         else
         {
-            resultado = offset;
-            inicio = medio + 1;
+            right = mid - 1;
         }
     }
 
-    return resultado;
+    return result;
 }
-
-
 
 // Función para escribir datos en un archivo en la tarjeta SD
 void writeToFile(const char *filename, const byte *buffer, size_t bufferSize)
@@ -100,9 +109,10 @@ void writeToFile(const char *filename, const byte *buffer, size_t bufferSize)
 #endif
     }
 }
+
 void lectorTask(void *pvParameters)
 {
-    const size_t blockSize = 20;
+    const size_t blockSize = 16;
     const int bloquesPorIteracion = 10;
     uint8_t buffer[blockSize];
 
@@ -112,7 +122,8 @@ void lectorTask(void *pvParameters)
         {
             if (xSemaphoreTake(sdMutex, pdMS_TO_TICKS(50)))
             {
-                File file = SD.open("/data0.bin", FILE_READ);
+                sprintf(file_name, "/%08lu.bin", (unsigned long)controlLectura.fecha); // Formatea el nombre del archivo con la fecha
+                File file = SD.open(file_name, FILE_READ);
                 if (file)
                 {
                     // Inicializar límites si aún no están definidos
@@ -138,6 +149,7 @@ void lectorTask(void *pvParameters)
                             controlLectura.error = true;
                             file.close();
                             xSemaphoreGive(sdMutex);
+                            enviarResultadoFinal(false, controlLectura.timestampOriginal);
                             continue;
                         }
                     }
@@ -159,19 +171,12 @@ void lectorTask(void *pvParameters)
                         controlLectura.posicionInicial += blockSize;
                         bloquesProcesados++;
 
-                        uint32_t fechaRegistro, timestampRegistro;
-                        memcpy(&fechaRegistro, buffer, 4);
-                        memcpy(&timestampRegistro, buffer + 4, 4);
+                        uint32_t timestampRegistro;
+                        memcpy(&timestampRegistro, buffer, 4);
 
                         // 📌 Imprimir información
                         Serial.printf("📦 Bloque %d - Offset: %d\n", bloquesProcesados, controlLectura.posicionInicial - blockSize);
-                        Serial.printf("Fecha: %u, Timestamp: %u\n", fechaRegistro, timestampRegistro);
-
-                        if (fechaRegistro != controlLectura.fecha)
-                        {
-                            Serial.println("↪ Fecha no coincide, bloque descartado.");
-                            continue;
-                        }
+                        Serial.printf("Fecha: %u, Timestamp: %u\n", controlLectura.fecha, timestampRegistro);
 
                         if (timestampRegistro < controlLectura.timestampInicio)
                         {
@@ -190,6 +195,12 @@ void lectorTask(void *pvParameters)
                         if (client.publish("events/ESP32_001/data", buffer, blockSize))
                         {
                             Serial.println("✅ Registro enviado.");
+                            memcpy(&timestamp, buffer, 4);
+                            memcpy(&x, buffer + 4, 4);
+                            memcpy(&y, buffer + 8, 4);
+                            memcpy(&z, buffer + 12, 4);
+
+                            Serial.printf("📤 Enviando -> Timestamp: %ld ms | X: %ld | Y: %ld | Z: %ld (cm/s²)\n", timestamp, x, y, z);
                         }
                         else
                         {
@@ -202,28 +213,23 @@ void lectorTask(void *pvParameters)
 
                         vTaskDelay(5 / portTICK_PERIOD_MS);
                     }
+                    // 👉 Verifica si ya terminaste de leer todos los bloques
+                    if (controlLectura.posicionInicial > controlLectura.offsetFin && !controlLectura.error)
+                    {
+                        controlLectura.lecturaActiva = false;
+                        finLectura = true;
+                    }
 
                     file.close();
                     xSemaphoreGive(sdMutex);
 
-                    if (!controlLectura.lecturaActiva && finLectura)
+                    if (!controlLectura.lecturaActiva && !controlLectura.error && finLectura)
                     {
-                        DynamicJsonDocument respDoc(128);
-                        respDoc["id"] = clientId;
-                        respDoc["timestamp"] = controlLectura.timestampOriginal;
-                        respDoc["status"] = controlLectura.error ? "error" : "completed";
-
-                        char finalMessage[128];
-                        serializeJson(respDoc, finalMessage);
-
-                        if (client.publish(topic_response.c_str(), finalMessage))
-                        {
-                            Serial.printf("📤 Mensaje final enviado: %s\n", finalMessage);
-                        }
-                        else
-                        {
-                            Serial.println("❌ Error al publicar mensaje final.");
-                        }
+                        enviarResultadoFinal(true, controlLectura.timestampOriginal);
+                    }
+                    else if (controlLectura.error)
+                    {
+                        enviarResultadoFinal(false, controlLectura.timestampOriginal);
                     }
                 }
                 else

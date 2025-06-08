@@ -56,5 +56,6 @@ void enviarEstado(const String &estado);
 void callback(char *topic, byte *payload, unsigned int length);
 uint32_t convertirFecha(uint32_t timestamp);
 uint32_t convertirTiempoDelDia(uint32_t timestamp);
+void enviarResultadoFinal(bool exito, uint32_t timestampOriginal);
 
 #endif

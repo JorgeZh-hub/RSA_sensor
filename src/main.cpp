@@ -7,12 +7,16 @@
 #include "GPS.h"
 #include "Mqtt_mod.h"
 
+uint32_t fecha_actual = 0;           // Fecha leída del RTC (YYYYMMDD)
+uint32_t fecha_anterior = 0;         // Fecha del último archivo
+char fileName[20] = "/00000000.bin"; // Nombre actual del archivo
+
 // Task handles
 TaskHandle_t adx_taskHandle = NULL;  // Manejador de tarea para el acelerómetro
 TaskHandle_t wifi_taskHandle = NULL; // Manejador de tarea para la sincronización
 
 // volatile bool syncFlag = false;                  // Bandera que indica si se recibió la señal de sincronización
-hw_timer_t *timer = NULL;                        // Puntero al temporizador utilizado para la generación de timestamps
+hw_timer_t *timer = NULL; // Puntero al temporizador utilizado para la generación de timestamps
 // portMUX_TYPE mux = portMUX_INITIALIZER_UNLOCKED; // Mutex para proteger la manipulación de la bandera de sincronización
 
 // Configuración del temporizador para incrementar el timestamp
@@ -67,87 +71,60 @@ void acelerometroTask(void *pvParameters)
     while (true)
     {
         if (isDataReady())
-        {                                                 // Verifica si hay datos listos para ser leídos
-            int fifoEntries = readRegistry(FIFO_ENTRIES); // Lee el número de entradas en el FIFO
-            int samplesToRead = fifoEntries * 3;          // Calcula cuántos bytes de datos leer (3 bytes por eje)
+        {
+            int fifoEntries = readRegistry(FIFO_ENTRIES);
+            int samplesToRead = fifoEntries * 3;
 
             if (samplesToRead > 0 && samplesToRead % 9 == 0)
-            {                                                                                          // Asegura que el número de bytes sea múltiplo de 9 (3 ejes x 3 muestras)
-                uint8_t *buffer = (uint8_t *)malloc(samplesToRead * sizeof(uint8_t));                  // Asigna memoria para los datos
-                uint32_t *buffer_timestamp = (uint32_t *)malloc(samplesToRead / 9 * sizeof(uint32_t)); // Asigna memoria para los timestamps
+            {
+                uint8_t *buffer = (uint8_t *)malloc(samplesToRead * sizeof(uint8_t));
+                uint32_t *buffer_timestamp = (uint32_t *)malloc(samplesToRead / 9 * sizeof(uint32_t));
 
-                generate_buffer_timestamp(buffer_timestamp, samplesToRead / 9, millis_timestamp); // Genera los timestamps basados en el tiempo actual
+                generate_buffer_timestamp(buffer_timestamp, samplesToRead / 9, millis_timestamp);
+                readFIFOData(buffer, samplesToRead);
 
-                readFIFOData(buffer, samplesToRead); // Lee los datos del FIFO
-
-                // Procesa los datos en bloques de 9 bytes (3 ejes x 3 muestras)
                 for (int i = 0; i < samplesToRead; i += 9)
                 {
-                    int32_t x_raw = raw_data(&buffer[i]);     // Obtiene los datos crudos del eje X
-                    int32_t y_raw = raw_data(&buffer[i + 3]); // Obtiene los datos crudos del eje Y
-                    int32_t z_raw = raw_data(&buffer[i + 6]); // Obtiene los datos crudos del eje Z
-
-                    uint8_t dataToWrite[20]; // Conjunto de datos de 20 bytes (fecha + timestamp + 3 ejes)
+                    int32_t x_raw = raw_data(&buffer[i]);
+                    int32_t y_raw = raw_data(&buffer[i + 3]);
+                    int32_t z_raw = raw_data(&buffer[i + 6]);
 
                     if (x_raw == 0 && y_raw == 0 && z_raw == 0)
-                    { // Si los valores de los ejes son 0, no se procesan
                         continue;
-                    }
-#ifdef DEBUG
-                    // Imprime los datos de cada muestra para depuración
-                    //Serial.printf("%d,  %d,     %d,    %d\n", buffer_timestamp[i / 9], x_raw, y_raw, z_raw);
-#endif
 
-                    // Copia la fecha y los datos al buffer final
-                    memcpy(dataToWrite, (const void *)&fecha, sizeof(fecha));
-                    memcpy(dataToWrite + sizeof(fecha), (const void *)&buffer_timestamp[i / 9], sizeof(buffer_timestamp[i / 9]));
-                    memcpy(dataToWrite + sizeof(fecha) + sizeof(buffer_timestamp[i / 9]), (const void *)&x_raw, sizeof(x_raw));
-                    memcpy(dataToWrite + sizeof(fecha) + sizeof(buffer_timestamp[i / 9]) + sizeof(x_raw), (const void *)&y_raw, sizeof(y_raw));
-                    memcpy(dataToWrite + sizeof(fecha) + sizeof(buffer_timestamp[i / 9]) + sizeof(x_raw) + sizeof(y_raw), (const void *)&z_raw, sizeof(z_raw));
+                    uint8_t dataToWrite[16]; // timestamp (4) + x (4) + y (4) + z (4)
 
-                    /*
-                    if (!client.connected())
-                    {
-                        reconnect();
-                    }
+                    // Copia los datos al buffer final
+                    memcpy(dataToWrite, &buffer_timestamp[i / 9], sizeof(uint32_t));
+                    memcpy(dataToWrite + 4, &x_raw, sizeof(int32_t));
+                    memcpy(dataToWrite + 8, &y_raw, sizeof(int32_t));
+                    memcpy(dataToWrite + 12, &z_raw, sizeof(int32_t));
 
-                    // 1. Llenar el struct con datos reales
-                    datosSensor.fecha = fecha;                       // Ejemplo: AAAAMMDD
-                    datosSensor.timestamp = buffer_timestamp[i / 9]; // Tiempo actual
-                    datosSensor.x_raw = x_raw;                       // Valor de ejemplo
-                    datosSensor.y_raw = y_raw;
-                    datosSensor.z_raw = z_raw;
-
-                    // 2. Enviar el struct como binario por MQTT
-                    if (client.publish("sensor/datos_bin", (const uint8_t *)&datosSensor, sizeof(datosSensor)))
-                    {
-                        Serial.println("Datos binarios enviados");
-                        // Debug: Imprime los bytes enviados (opcional)
-                        Serial.write((uint8_t *)&datosSensor, sizeof(datosSensor));
-                    }
-                    else
-                    {
-                        Serial.println("Error al publicar");
-                    }*/
-                    // Verifica si hay espacio en el buffer y escribe en la tarjeta SD
                     if (bufferIndex + sizeof(dataToWrite) <= DATA_BLOCK_SIZE)
                     {
-                        memcpy(&writeBuffer[bufferIndex], dataToWrite, sizeof(dataToWrite)); // Copia los datos al buffer de escritura
-                        bufferIndex += sizeof(dataToWrite);                                  // Actualiza el índice del buffer
+                        memcpy(&writeBuffer[bufferIndex], dataToWrite, sizeof(dataToWrite));
+                        bufferIndex += sizeof(dataToWrite);
                     }
                     else
                     {
-                        //if (xSemaphoreTake(sdMutex, portMAX_DELAY))
-                        //{
-                            writeToFile("/data0.bin", writeBuffer, bufferIndex);
-                            bufferIndex = 0;
-                            //xSemaphoreGive(sdMutex);
-                        //}
+                        // Obtiene la hora actual del RTC
+                        DateTime now = rtc.now();
+
+                        // Convierte a formato YYYYMMDD
+                        fecha_actual = now.year() * 10000 + now.month() * 100 + now.day();
+                        if (fecha_actual != fecha_anterior)
+                        {
+                            fecha_anterior = fecha_actual;
+                            // Crea nuevo nombre de archivo con la nueva fecha
+                            sprintf(fileName, "/%08lu.bin", (unsigned long)fecha_actual);
+                        }
+                        writeToFile(fileName, writeBuffer, bufferIndex);
+                        bufferIndex = 0;
                     }
                 }
 
-                free(buffer);           // Libera la memoria utilizada para los datos
-                free(buffer_timestamp); // Libera la memoria utilizada para los timestamps
+                free(buffer);
+                free(buffer_timestamp);
             }
         }
     }
@@ -217,6 +194,9 @@ void setup()
         // Actualiza los contadores globales
         millis_timestamp = hora * 1000; // Timestamp en milisegundos
         ::fecha = fecha;                // Fecha en formato YYYYMMDD
+        fecha_actual = fecha;
+        fecha_anterior = fecha;
+        sprintf(fileName, "/%08lu.bin", (unsigned long)fecha_actual);
 
 // Imprime los valores para depuración
 #ifdef DEBUG
@@ -283,16 +263,15 @@ void setup()
     client.setServer(mqtt_server, mqtt_port);
     client.setCallback(callback);
     enviarEstado("on");
-
     enviarEstado("online");
 
     ///////////////////////////////////////////FreeRTOS//////////////////////////////////////////////////////////////////////
 
     // Crea las tareas para el acelerómetro y la sincronización
-    xTaskCreatePinnedToCore(acelerometroTask, "AcelerometroTask", 4096, NULL, 2, &adx_taskHandle, tskNO_AFFINITY);
+    xTaskCreatePinnedToCore(acelerometroTask, "AcelerometroTask", 8192, NULL, 2, &adx_taskHandle, tskNO_AFFINITY);
     xTaskCreatePinnedToCore(lectorTask, "lectorTask", 4096, NULL, 1, NULL, tskNO_AFFINITY);
-    xTaskCreatePinnedToCore(wifi_task, "WiFiTask", 2048, NULL, 1, &wifi_taskHandle, tskNO_AFFINITY);
+    xTaskCreatePinnedToCore(wifi_task, "WiFiTask", 4096, NULL, 1, &wifi_taskHandle, tskNO_AFFINITY);
     xTaskCreatePinnedToCore(mqttLoopTask, "MQTTLoopTask", 4096, NULL, 1, NULL, tskNO_AFFINITY);
 }
 
-void loop() {} // La función loop está vacía, ya que el código se maneja en las tareas
+void loop() {}

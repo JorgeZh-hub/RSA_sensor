@@ -12,7 +12,7 @@
 extern SPIClass spiSD; // Instancia de la clase SPI para la comunicación con el módulo SD
 
 const int SD_FREQ = 4000000; // Frecuencia de la comunicación SPI con la tarjeta SD (4 MHz)
-#define DATA_BLOCK_SIZE 1000 // Tamaño del buffer utilizado para almacenar datos a escribir (1000 bytes)
+#define DATA_BLOCK_SIZE 2000 // Tamaño del buffer utilizado para almacenar datos a escribir (1000 bytes)
 
 // Variables externas para gestionar la escritura de datos en el archivo
 extern volatile bool sdWriteFlag; // Bandera para indicar que hay datos listos para escribir en el archivo

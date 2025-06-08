@@ -60,6 +60,26 @@ void enviarEstado(const String &estado)
         Serial.println("Error al enviar el mensaje.");
     }
 }
+void enviarResultadoFinal(bool exito, uint32_t timestampOriginal)
+{
+    if (!client.connected())
+    {
+        reconnect();
+    }
+
+    DynamicJsonDocument doc(128);
+    doc["id"] = clientId;
+    doc["timestamp"] = timestampOriginal;
+    doc["status"] = exito ? "finished" : "error";
+
+    char mensaje[128];
+    serializeJson(doc, mensaje);
+
+    client.publish(topic_response.c_str(), mensaje);
+    Serial.print("Mensaje final enviado: ");
+    Serial.println(mensaje);
+}
+
 
 void reconnect()
 {
@@ -153,7 +173,9 @@ void callback(char *topic, byte *payload, unsigned int length)
         controlLectura.fecha = convertirFecha(tsUnix);
         Serial.printf("Fecha interpretada: %d \n", controlLectura.fecha);
         controlLectura.timestampInicio = convertirTiempoDelDia(tsUnix);
+        Serial.printf("Hora interpretada: %d \n", controlLectura.timestampInicio);
         controlLectura.timestampFin = controlLectura.timestampInicio + duration * 1000;
+        Serial.printf("Hora de finalización: %d \n", controlLectura.timestampFin);
         controlLectura.posicionInicial = 0;
         controlLectura.lecturaActiva = true;
         controlLectura.timestampOriginal = (uint32_t)timestamp.toInt();
