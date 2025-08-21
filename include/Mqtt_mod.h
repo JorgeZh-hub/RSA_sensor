@@ -5,7 +5,7 @@
 #include <PubSubClient.h>
 
 // Configuración MQTT
-constexpr const char *mqtt_server = "test.mosquitto.org"; // Broker público de prueba
+constexpr const char *mqtt_server = "203.0.113.1"; // Broker público de prueba
 constexpr const int mqtt_port = 1883;
 constexpr const char *mqtt_user = ""; // Dejar vacío si no hay autenticación
 constexpr const char *mqtt_pass = "";
