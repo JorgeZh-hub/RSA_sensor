@@ -5,11 +5,6 @@
 #include <PubSubClient.h>
 #include <ArduinoJson.h>
 
-// Configuración MQTT
-constexpr const char *mqtt_server = ""; // Broker privado
-constexpr const int mqtt_port = 1883;
-constexpr const char *mqtt_user = ""; // Dejar vacío si no hay autenticación
-constexpr const char *mqtt_pass = "";
 
 extern WiFiClient espClient;
 extern PubSubClient client;

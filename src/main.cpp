@@ -6,6 +6,7 @@
 #include "WiFi_mod.h"
 #include "GPS.h"
 #include "Mqtt_mod.h"
+#include "credentials.h"
 
 uint32_t fecha_actual = 0;           // Fecha leída del RTC (YYYYMMDD)
 uint32_t fecha_anterior = 0;         // Fecha del último archivo
