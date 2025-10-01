@@ -1,7 +1,7 @@
 # Proyecto ESP32: Registro de Señales Acelerométricas
 
 ## Descripción
-Esta guía describe la instalación, programación y uso de un sensor implementado en un microcontrolador ESP32 para el registro continuo de señales acelerométricas utilizando diversos periféricos.
+Esta repositorio contiene el software de un sensor implementado en un microcontrolador ESP32 para el registro continuo de señales acelerométricas utilizando diversos periféricos.
 
 ## Periféricos
 El sistema sensor está compuesto por los siguientes cuatro módulos principales:
