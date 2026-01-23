@@ -7,9 +7,9 @@ HardwareSerial GPS(UART_NUMBER);
  * Inicializa la comunicación UART con el módulo GPS.
  */
 void GPS_init() {
-    #ifdef DEBUG
-        Serial.println("Inicializando GPS...");
-    #endif
+    
+    Serial.println("Inicializando GPS...");
+    
 
     // Configuración de la UART para el módulo GPS
     GPS.begin(GPS_BAUD, SERIAL_8N1, GPS_RX, GPS_TX); // Configura UART1 con 9600 bps, 8 bits de datos, sin paridad, 1 bit de parada
@@ -23,9 +23,8 @@ void GPS_init() {
         delay(100); // Espera un breve momento para procesar cada comando
     }
 
-    #ifdef DEBUG
-        Serial.println("Configuración del GPS completa.");
-    #endif
+    Serial.println("Configuración del GPS completa.");
+    
 
     delay(1000); // Espera adicional para garantizar la configuración del módulo
 }

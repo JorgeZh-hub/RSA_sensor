@@ -5,13 +5,13 @@
 #include <SD.h>
 
 // Configuración de pines para la comunicación SPI con el módulo SD (VSPI)
-#define SD_MISO 19     // Pin de entrada de datos (Master In Slave Out)
-#define SD_MOSI 23     // Pin de salida de datos (Master Out Slave In)
+#define SD_MISO 23     // Pin de entrada de datos (Master In Slave Out)
+#define SD_MOSI 19     // Pin de salida de datos (Master Out Slave In)
 #define SD_SCK 18      // Pin de reloj (Serial Clock)
 #define SD_CS 5        // Pin de selección de chip (Chip Select)
 extern SPIClass spiSD; // Instancia de la clase SPI para la comunicación con el módulo SD
 
-const int SD_FREQ = 4000000; // Frecuencia de la comunicación SPI con la tarjeta SD (4 MHz)
+const int SD_FREQ = 4000000;  // Frecuencia de la comunicación SPI con la tarjeta SD (4 MHz)
 #define DATA_BLOCK_SIZE 2000 // Tamaño del buffer utilizado para almacenar datos a escribir (1000 bytes)
 
 // Variables externas para gestionar la escritura de datos en el archivo

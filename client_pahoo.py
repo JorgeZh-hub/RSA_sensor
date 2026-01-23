@@ -9,7 +9,7 @@ from datetime import datetime, timedelta
 
 # --- Configuración del broker ---
 # --- Configuración MQTT ---
-MQTT_BROKER = ""
+MQTT_BROKER = "192.168.0.101"
 MQTT_PORT = 1883
 MQTT_USER = ""
 MQTT_PASS = ""

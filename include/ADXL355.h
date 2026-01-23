@@ -37,8 +37,8 @@ const int WRITE_BYTE = 0x00; // Código para escritura de un byte
 // Pines utilizados para la conexión con el ADXL355
 #define ADXL_MISO 12 // Pin para la señal MISO (Master In Slave Out)
 #define ADXL_MOSI 13 // Pin para la señal MOSI (Master Out Slave In)
-#define ADXL_SCK 14  // Pin para la señal del reloj (SCK)
-#define ADXL_CS 27   // Pin para la señal de selección de chip (CS)
+#define ADXL_SCK 27  // Pin para la señal del reloj (SCK)
+#define ADXL_CS 14   // Pin para la señal de selección de chip (CS)
 
 extern SPIClass spiADXL; // SPI personalizado para el sensor ADXL355
 

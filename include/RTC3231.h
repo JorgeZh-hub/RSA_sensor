@@ -8,11 +8,10 @@
 #include <RTClib.h> // Biblioteca para trabajar con el RTC DS3231
 #include <time.h>   // Biblioteca para manejo de tiempo (NTP)
 
-
 const uint32_t SERIAL_SPEED = 115200; // Velocidad en baudios para la comunicación serial
-const uint32_t I2C_SDA = 21; // SDA de I2C
-const uint32_t I2C_SCL = 22; // SCL de I2C
-const uint32_t SQW_INT = 34; // Pin de interrupción para la sincronización con el RTC
+const uint32_t I2C_SDA = 22;          // SDA de I2C
+const uint32_t I2C_SCL = 21;          // SCL de I2C
+const uint32_t SQW_INT = 34;          // Pin de interrupción para la sincronización con el RTC
 
 // Objeto global para interactuar con el RTC DS3231
 extern RTC_DS3231 rtc;
